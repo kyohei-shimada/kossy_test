@@ -1,0 +1,29 @@
+: cascade base
+: around content -> {
+
+	<: if($status == 'alert-error'){ :>
+	  <div class="alert alert-error"><: $message :></div>
+	<: } elsif($status == 'alert-success'){ :>
+	  <div class="alert alert-success"><: $message :></div>
+	<: } else { :>
+	  <div class="alert alert-info">テキストを入力してください</div>
+	<: }; :>
+
+	<form action="<: $c.req.uri_for('/') :>" method="post" >
+	  <input type="text" size="10" name="msg" />
+	  <input type="submit" value="送信する">
+	</form>
+	<h2>保存したテキスト一覧(最新10件)</h2>
+	<table class="table table-hover">
+		<tr>
+		  <th>ID</th>
+		  <th>テキスト</th>
+		</tr>
+		<: while( my $row = $results.next ) { :>
+		  <tr>
+		    <td><: $row.id :></td>
+		    <td><: $row.msg :></td>
+		  </tr>
+		<: } :>
+	</table>
+: }
