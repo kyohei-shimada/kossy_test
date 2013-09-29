@@ -1,29 +1,42 @@
+<!DOCTYPE html>
+
 : cascade base
 : around content -> {
-
 	<: if($status == 'alert-error'){ :>
 	  <div class="alert alert-error"><: $message :></div>
 	<: } elsif($status == 'alert-success'){ :>
 	  <div class="alert alert-success"><: $message :></div>
 	<: } else { :>
-	  <div class="alert alert-info">テキストを入力してください</div>
+	  <div class="alert alert-info">ToDoを入力してください</div>
 	<: }; :>
 
 	<form action="<: $c.req.uri_for('/') :>" method="post" >
 	  <input type="text" size="10" name="msg" />
 	  <input type="submit" value="送信する">
 	</form>
-	<h2>保存したテキスト一覧(最新10件)</h2>
-	<table class="table table-hover">
-		<tr>
-		  <th>ID</th>
-		  <th>テキスト</th>
-		</tr>
-		<: while( my $row = $results.next ) { :>
-		  <tr>
-		    <td><: $row.id :></td>
-		    <td><: $row.msg :></td>
-		  </tr>
-		<: } :>
-	</table>
+
+
+		<h2>ToDo一覧(最新10件)</h2>
+		<table class="table table-hover">
+			<tr>
+			  <th>ID</th>
+			  <th>ToDo</th>
+			  <th></th>
+			  <th></th>
+			</tr>
+			<: while( my $row = $results.next ) { :>
+			  <tr>
+			    <td><: $row.id :></td>
+			    <td><: $row.msg :></td>
+			    <form action="<: $c.req.uri_for('/edit') :>" method="get" >
+			    	<td><button type="submit" class="btn btn-info" name="id" value="<: $row.id :>">編集</a></td>
+		    	</form>
+			    <form action="<: $c.req.uri_for('/delete') :>" method="post" >
+			    	<td align="right"><button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</a></td>
+			    </form>
+			  </tr>
+			<: } :>
+		</table>
+
 : }
+</html>

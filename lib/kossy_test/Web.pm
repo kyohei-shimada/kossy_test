@@ -12,6 +12,7 @@ use Teng::Schema::Loader;
 my $dsn = "dbi:mysql:database=kossy_test;host=localhost";
 my $user = "kossy";
 my $password = "kossy_test";
+my $table_name = "test";
 
 
 filter 'set_title' => sub {
@@ -31,7 +32,7 @@ get '/' => [qw/set_title/] => sub {
       'namespace' => 'KossyTest::DB',
     );
     my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
-    $c->render('index.tx', { status => 'alert-info', message => "何かテキストを入力してください", results => $iter });
+    $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter });
 };
 
 post '/' => sub {
@@ -54,13 +55,13 @@ post '/' => sub {
     # error check
     if ( $result->has_error ){
         my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
-        $c->render('index.tx', { status => "alert-error", message => "テキストが入力されていません", results => $iter } );
+        $c->render('index.tx', { status => "alert-error", message => "ToDoが入力されていません", results => $iter } );
     } else{
         my $insert_result = $teng->insert('test' => {
             'msg' => $result->valid('msg')
         });
         my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
-        $c->render('index.tx', { status => "alert-success", message => "テキストを保存しました", results => $iter });
+        $c->render('index.tx', { status => "alert-success", message => "ToDoを保存しました", results => $iter });
     }
     #my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
     #my $teng = Teng::Schema::Loader->load(
@@ -68,6 +69,36 @@ post '/' => sub {
     #    'namespace' => 'MyApp::DB',
     #);
 };
+
+# delete
+post '/delete' => sub {
+    my ( $self, $c )  = @_;
+    # validation
+    my $result = $c->req->validator([
+        'id' => {
+            rule => [
+                ['UINT','idが不正な値です'],
+            ],
+        },
+    ]);
+
+    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
+    my $teng = Teng::Schema::Loader->load(
+        'dbh'       => $dbh,
+        'namespace' => 'KossyTest::DB',
+    );
+
+    # error check
+    if ( $result->has_error ){
+        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-error", message => "入力値が不正です", results => $iter } );
+    } else{
+        my $count = $teng->delete($table_name => {'id' => ($result->valid('id') + 0)});
+        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-success", message => "ToDoを削除しました" , results => $iter } );
+    }
+};
+
 
 
 #get '/json' => sub {
