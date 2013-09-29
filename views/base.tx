@@ -9,6 +9,15 @@
 body {
   padding-top: 60px;
 }
+
+.left {
+	float: left;
+}
+
+.right {
+	text-align: right;
+}
+
 </style>
 <link rel="stylesheet" href="<: $c.req.uri_for('/css/bootstrap-responsive.min.css') :>">
 </head>

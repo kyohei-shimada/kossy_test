@@ -27,13 +27,21 @@ filter 'set_title' => sub {
 
 get '/' => [qw/set_title/] => sub {
     my ( $self, $c )  = @_;
+    my $query = $c->req->param('q');
+
     my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
     my $teng = Teng::Schema::Loader->load(
       'dbh'       => $dbh,
       'namespace' => 'KossyTest::DB',
     );
-    my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
-    $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter });
+
+    if ($query){
+        my $iter = $teng->search('test', [ 'msg', {'like' => ('%' . $query .'%') }  ], +{ limit => 10, order_by => 'id desc' });
+        $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter, query => $query });
+    } else{
+        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter });
+    }
 };
 
 # create
