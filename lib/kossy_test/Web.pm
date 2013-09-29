@@ -8,6 +8,7 @@ use DBIx::Sunny;
 use DBD::mysql;
 use Teng;
 use Teng::Schema::Loader;
+use Data::Dumper;
 
 my $dsn = "dbi:mysql:database=kossy_test;host=localhost";
 my $user = "kossy";
@@ -35,6 +36,7 @@ get '/' => [qw/set_title/] => sub {
     $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter });
 };
 
+# create
 post '/' => sub {
     my ( $self, $c )  = @_;
     # validation
@@ -70,6 +72,71 @@ post '/' => sub {
     #);
 };
 
+# edit
+get '/edit'=> sub {
+ my ( $self, $c )  = @_;
+    # validation
+    my $result = $c->req->validator([
+        'id' => {
+            rule => [
+                ['UINT','idが不正な値です'],
+            ],
+        },
+    ]);
+
+    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
+    my $teng = Teng::Schema::Loader->load(
+        'dbh'       => $dbh,
+        'namespace' => 'KossyTest::DB',
+    );
+
+    # error check
+    if ( $result->has_error ){
+        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-error", message => "入力値が不正です", results => $iter } );
+    } else{
+        my $row = $teng->single($table_name, {'id' => $result->valid('id')});
+        $c->render('edit.tx', { row => $row } );
+    }
+};
+
+# put(編集後の確定)
+post '/put'=> sub {
+ my ( $self, $c )  = @_;
+    # validation
+    my $result = $c->req->validator([
+        'id' => {
+            rule => [
+                ['UINT','idが不正な値です'],
+            ],
+        },
+        'msg' => {
+            rule => [
+                ['NOT_NULL', 'empty body'],
+            ],
+        },
+    ]);
+
+    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
+    my $teng = Teng::Schema::Loader->load(
+        'dbh'       => $dbh,
+        'namespace' => 'KossyTest::DB',
+    );
+
+    # error check
+    if ( $result->has_error ){
+        my $row = $teng->single($table_name, {'id' => $result->valid('id')});
+        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('edit.tx', { status => "alert-error", message => "入力値が不正です", row => $row } );
+    } else{
+        my $row = $teng->single($table_name, {'id' => $result->valid('id')});
+        my $count = $teng->update($table_name, {'msg' => $result->valid('msg') }, { 'id' => $row->id });
+        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-success", message => "ToDo内容を変更しました" , results => $iter, row => $row } );
+    }
+};
+
+
 # delete
 post '/delete' => sub {
     my ( $self, $c )  = @_;
@@ -93,7 +160,7 @@ post '/delete' => sub {
         my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-error", message => "入力値が不正です", results => $iter } );
     } else{
-        my $count = $teng->delete($table_name => {'id' => ($result->valid('id') + 0)});
+        my $count = $teng->delete($table_name => {'id' => $result->valid('id')});
         my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-success", message => "ToDoを削除しました" , results => $iter } );
     }

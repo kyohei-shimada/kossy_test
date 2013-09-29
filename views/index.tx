@@ -16,27 +16,27 @@
 	</form>
 
 
-		<h2>ToDo一覧(最新10件)</h2>
-		<table class="table table-hover">
-			<tr>
-			  <th>ID</th>
-			  <th>ToDo</th>
-			  <th></th>
-			  <th></th>
-			</tr>
-			<: while( my $row = $results.next ) { :>
-			  <tr>
-			    <td><: $row.id :></td>
-			    <td><: $row.msg :></td>
-			    <form action="<: $c.req.uri_for('/edit') :>" method="get" >
-			    	<td><button type="submit" class="btn btn-info" name="id" value="<: $row.id :>">編集</a></td>
-		    	</form>
-			    <form action="<: $c.req.uri_for('/delete') :>" method="post" >
-			    	<td align="right"><button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</a></td>
-			    </form>
-			  </tr>
-			<: } :>
-		</table>
+	<h2>ToDo一覧(最新10件)</h2>
+	<table class="table table-hover">
+		<tr>
+		  <th>ID</th>
+		  <th>ToDo</th>
+		  <th></th>
+		  <th></th>
+		</tr>
+		<: while( my $row = $results.next ) { :>
+		  <tr>
+		    <td><: $row.id :></td>
+		    <td><: $row.msg :></td>
+	    	<td>
+	    		<a href="<: $c.req.uri_for('/edit') :>?id=<: $row.id :>" class="btn btn-info">編集</a>
+	    	</td>
+		    <form action="<: $c.req.uri_for('/delete') :>" method="post" >
+		    	<td align="right"><button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</a></td>
+		    </form>
+		  </tr>
+		<: } :>
+	</table>
 
 : }
 </html>
