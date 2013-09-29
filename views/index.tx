@@ -15,7 +15,7 @@
 	  	<: $message :>
 	  </div>
 	<: } else { :>
-	  <div class="alert alert-info close">
+	  <div class="alert alert-info">
 	  	<button type="button" class="close" data-dismiss="alert">&times;</button>ToDoを入力してください
 	  </div>
 	<: }; :>

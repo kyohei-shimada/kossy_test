@@ -9,12 +9,15 @@ use DBD::mysql;
 use Teng;
 use Teng::Schema::Loader;
 use Data::Dumper;
+use Text::MeCab;
+use Encode 'decode';
 
 my $dsn = "dbi:mysql:database=kossy_test;host=localhost";
 my $user = "kossy";
 my $password = "kossy_test";
 my $table_name = "test";
-
+my $ng_words = ['等', 'など', '的', 'とか', '多分', 'たぶん', 'それなり', '色々', 'いろいろ', 'さまざま', '様々'];
+my $ng_phrases = +["何か", "なんか", "なにか"];
 
 filter 'set_title' => sub {
     my $app = shift;
@@ -71,8 +74,38 @@ post '/' => sub {
         'namespace' => 'KossyTest::DB',
     );
 
+    # 形態素解析(NGワードのチェック)
+    my $is_ng = 0;
+    my $m = Text::MeCab->new();
+    my $n = $m->parse($result->valid('msg'));
+    while ($n->surface) {
+        my $word = decode('UTF-8', $n->surface);
+        $n = $n->next;
+        foreach my $ng_word (@$ng_words) {
+            print Dumper $ng_word;
+            if ($ng_word =~ /^$word$/){
+                $is_ng = 1;
+                last;
+            }
+        }
+    }
+
+    # (NG文節のチェック)
+    print Dumper "===============";
+    print Dumper $result->valid('msg');
+    foreach my $ng_phrase (@$ng_phrases) {
+        print Dumper $ng_phrase;
+        if ($result->valid('msg') =~ /$ng_phrase/){
+           $is_ng = 1;
+           last;
+        }
+    }
+
     # error check
-    if ( $result->has_error ){
+    if ( $is_ng ){
+        my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-error", message => "ToDoに曖昧な表現が含まれています．より具体的にToDoを記述してください", results => $iter } );
+    } elsif ( $result->has_error ){
         my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-error", message => "ToDoが入力されていません", results => $iter } );
     } else{
