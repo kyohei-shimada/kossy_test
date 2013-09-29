@@ -5,11 +5,19 @@
 	<h2>新規ToDo作成</h2>
 
 	<: if($status == 'alert-error'){ :>
-	  <div class="alert alert-error"><: $message :></div>
+	  <div class="alert alert-error">
+	  	<button type="button" class="close" data-dismiss="alert">&times;</button>
+	  	<: $message :>
+	  </div>
 	<: } elsif($status == 'alert-success'){ :>
-	  <div class="alert alert-success"><: $message :></div>
+	  <div class="alert alert-success">
+	  	<button type="button" class="close" data-dismiss="alert">&times;</button>
+	  	<: $message :>
+	  </div>
 	<: } else { :>
-	  <div class="alert alert-info">ToDoを入力してください</div>
+	  <div class="alert alert-info close">
+	  	<button type="button" class="close" data-dismiss="alert">&times;</button>ToDoを入力してください
+	  </div>
 	<: }; :>
 
 	<form action="<: $c.req.uri_for('/') :>" method="post" >
@@ -19,7 +27,7 @@
 
 
 
-	<h2>ToDo一覧(最新10件)</h2>
+	<h2>ToDo一覧</h2>
 	<form action="<: $c.req.uri_for('/') :>" method="get" >
 		<label>検索 : <input type="text" size="100" name="q" value="<: $query :>" placeholder="キーワード" />
 		<input type="submit" value="送信する"></label>
@@ -33,22 +41,23 @@
 		</div>
 	<: } :>
 	<table class="table table-hover">
-		<tr>
-		  <th>ID</th>
-		  <th>ToDo</th>
-		  <th></th>
-		  <th></th>
-		</tr>
+		<thead>
+			<tr>
+				<th>No.</th>
+				<th>ToDo</th>
+				<th></th>
+			</tr>
+		</thead>
 		<: while( my $row = $results.next ) { :>
 		  <tr>
 		    <td><: $row.id :></td>
 		    <td><: $row.msg :></td>
-	    	<td>
-	    		<a href="<: $c.req.uri_for('/edit') :>?id=<: $row.id :>" class="btn btn-info">編集</a>
-	    	</td>
-		    <form action="<: $c.req.uri_for('/delete') :>" method="post" >
-		    	<td align="right"><button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</a></td>
-		    </form>
+	    	<td class="td-right">
+	    		<form action="<: $c.req.uri_for('/delete') :>" class="action-form" method="post" >
+		    		<a href="<: $c.req.uri_for('/edit') :>?id=<: $row.id :>" class="btn btn-info">編集</a>
+			    	<button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</button>
+		    	</form>
+		    </td>
 		  </tr>
 		<: } :>
 	</table>

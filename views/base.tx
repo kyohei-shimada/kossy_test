@@ -18,6 +18,14 @@ body {
 	text-align: right;
 }
 
+td.td-right {
+	text-align: right;
+}
+
+form.action-form {
+	margin-bottom: 0px;
+}
+
 </style>
 <link rel="stylesheet" href="<: $c.req.uri_for('/css/bootstrap-responsive.min.css') :>">
 </head>

@@ -36,10 +36,19 @@ get '/' => [qw/set_title/] => sub {
     );
 
     if ($query){
-        my $iter = $teng->search('test', [ 'msg', {'like' => ('%' . $query .'%') }  ], +{ limit => 10, order_by => 'id desc' });
-        $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter, query => $query });
+        my $iter = $teng->search('test', [ 'msg', {'like' => ('%' . $query .'%') }  ], +{ order_by => 'id desc' });
+        #print Dumper($iter);
+        #my $count = $teng->do($like);
+        #my $count = $teng->count('test', '*', {like => ('%' . $query .'%')});
+        #print Dumper($count);
+        $c->render('index.tx',
+            { status => 'alert-info',
+            message => "何かToDoを入力してください" ,
+            results => $iter,
+            query => $query}
+        );
     } else{
-        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => 'alert-info', message => "何かToDoを入力してください", results => $iter });
     }
 };
@@ -64,13 +73,13 @@ post '/' => sub {
 
     # error check
     if ( $result->has_error ){
-        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-error", message => "ToDoが入力されていません", results => $iter } );
     } else{
         my $insert_result = $teng->insert('test' => {
             'msg' => $result->valid('msg')
         });
-        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-success", message => "ToDoを保存しました", results => $iter });
     }
     #my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
@@ -100,7 +109,7 @@ get '/edit'=> sub {
 
     # error check
     if ( $result->has_error ){
-        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search($table_name, {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-error", message => "入力値が不正です", results => $iter } );
     } else{
         my $row = $teng->single($table_name, {'id' => $result->valid('id')});
@@ -134,12 +143,12 @@ post '/put'=> sub {
     # error check
     if ( $result->has_error ){
         my $row = $teng->single($table_name, {'id' => $result->valid('id')});
-        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search($table_name, {}, +{ order_by => 'id desc'});
         $c->render('edit.tx', { status => "alert-error", message => "入力値が不正です", row => $row } );
     } else{
         my $row = $teng->single($table_name, {'id' => $result->valid('id')});
         my $count = $teng->update($table_name, {'msg' => $result->valid('msg') }, { 'id' => $row->id });
-        my $iter = $teng->search($table_name, {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search($table_name, {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-success", message => "ToDo内容を変更しました" , results => $iter, row => $row } );
     }
 };
