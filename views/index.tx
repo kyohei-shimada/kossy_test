@@ -2,7 +2,6 @@
 
 : cascade base
 : around content -> {
-	<h2>新規ToDo作成</h2>
 
 	<: if($status == 'alert-error'){ :>
 	  <div class="alert alert-error">
@@ -15,14 +14,45 @@
 	  	<: $message :>
 	  </div>
 	<: } else { :>
-	  <div class="alert alert-info">
-	  	<button type="button" class="close" data-dismiss="alert">&times;</button>ToDoを入力してください
-	  </div>
 	<: }; :>
 
+	<: if($similers){ :>
+		<div class="alert alert-block">
+	    	<button type="button" class="close" data-dismiss="alert">&times;</button>
+	    	<h4>類似しているToDoがあります</h4>
+
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th>No.</th>
+						<th>ToDo</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					  :for $similers -> $similer {
+						  <tr>
+						    <td><: $similer.id :></td>
+						    <td><: $similer.msg :></td>
+					    	<td class="td-right">
+					    		<form action="<: $c.req.uri_for('/delete') :>" class="action-form" method="post" >
+							    	<button type="submit" class="btn btn-danger" name="id" value="<: $similer.id :>">削除</button>
+						    	</form>
+						    </td>
+						  </tr>
+						:}
+				</tbody>
+			</table>
+	    </div>
+    <: } :>
+
+
+
+	<h2>新規ToDo作成</h2>
 	<form action="<: $c.req.uri_for('/') :>" method="post" >
-	  <input type="text" size="100" name="msg" placeholder="何をする？"/>
-	  <input type="submit" value="送信する">
+		<div class="alert alert-info">ToDoを入力してください</div>
+		<input type="text" size="100" name="msg" placeholder="何をする？"/>
+		<input type="submit" value="送信する">
 	</form>
 
 
@@ -42,7 +72,7 @@
 			</div>
 		</div>
 	<: } :>
-	<table class="table table-hover display">
+	<table id="basic-table" class="table table-hover display">
 		<thead>
 			<tr>
 				<th>No.</th>

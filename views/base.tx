@@ -42,10 +42,10 @@ form.action-form {
 <span class="icon-bar"></span>
 <span class="icon-bar"></span>
 </a>
-<a class="brand" href="<: $c.req.uri_for('/') :>">kossy_test</a>
+<a class="brand" href="<: $c.req.uri_for('/') :>">ToDo管理</a>
 <div class="nav-collapse">
 <ul class="nav">
-<li class="active"><a href="<: $c.req.uri_for('/') :>">Home</a></li>
+<li class="active"><a href="<: $c.req.uri_for('/') :>">ホーム</a></li>
 <!--
 <li><a href="#about">About</a></li>
 <li><a href="#contact">Contact</a></li>
@@ -67,7 +67,27 @@ form.action-form {
 <script type="text/javascript" src="<: $c.req.uri_for('/js/jquery.dataTables.min.js') :>"></script>
 <script>
 	$(document).ready(function(){
-	    $('table').dataTable({
+	    $('#basic-table').dataTable({
+	    	"oLanguage": {
+		        "sLengthMenu": "_MENU_ 件ずつ表示",
+		        "sZeroRecords": "見つかりませんでした",
+		        "sSearch": "検索",
+		        "oPaginate" : {
+		        	"sNext": "▶",
+		        	"sPrevious": "◀",
+		        	"sFirst": "<<",
+		        	"sLast": ">>"
+		        },
+		        "sInfo": "全 _TOTAL_ 件中 _START_ から _END_ 件目を表示中",
+		        "sInfoEmpty": "Showing 0 to 0 of 0 records",
+		        "sInfoFiltered": ""
+		    },
+    		"aaSorting": [[ 0, "desc" ]],
+    		"sPaginationType": "full_numbers",
+    		"bJQueryUI": true
+	    });
+
+	   	$('#similer-table').dataTable({
 	    	"oLanguage": {
 		        "sLengthMenu": "_MENU_ 件ずつ表示",
 		        "sZeroRecords": "見つかりませんでした",
@@ -83,7 +103,6 @@ form.action-form {
 		        "sInfoFiltered": ""
 		    },
     		"sPaginationType": "full_numbers",
-    		"bJQueryUI": true
 	    });
 
 		$(".ui-toolbar").css("padding-bottom", "10px");

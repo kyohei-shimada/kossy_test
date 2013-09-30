@@ -11,6 +11,7 @@ use Teng::Schema::Loader;
 use Data::Dumper;
 use Text::MeCab;
 use Encode 'decode';
+use String::Trigram;
 
 my $dsn = "dbi:mysql:database=kossy_test;host=localhost";
 my $user = "kossy";
@@ -28,12 +29,13 @@ sub teng {
     $teng;
 }
 
-# NGワードのチェック
+# 指定した文字列がNGワードに含まれているか？
+# args : ($msg)
+#    $msg : 比較する文1
+# return : 含まれているなら1, 含まれていなければ0
 sub is_ng {
     my $self = shift;
     my $msg = shift;
-    print Dumper "======";
-    print Dumper $msg;
 
     my $ng_words = ['等', 'など', '的', 'とか', '多分', 'たぶん', 'それなり', '色々', 'いろいろ', 'さまざま', '様々'];
     my $ng_phrases = +["何か", "なんか", "なにか"];
@@ -61,6 +63,49 @@ sub is_ng {
     }
 
     $is_ng;
+}
+
+# 2つの文の類似度をtrigramで計算する
+# args : ($text1, $text2)
+#    $text1 : 比較する文1
+#    $text2 : 比較する文2
+# return : 類似度
+sub trigram {
+    my $self = shift;
+    my $text1 = shift;
+    my $text2 = shift;
+
+    String::Trigram::compare($text1, $text2);
+}
+
+# 指定した文に似ているToDoの配列を取得する
+# args : ($teng, $compared, $compare_data, $th)
+#    $teng : $tengオブジェクト
+#    $compared : 比較される文
+#    $th : しきい値(0〜1.0)[完全一致が1.0]
+#    $id : 例外として取り除くid(自分自身を除きたい場合に使用．使用しない場合0)
+sub get_relations {
+    my $self = shift;
+    my $teng = shift;
+    my $compared = shift;
+    my $th = shift;
+    my $id = shift;
+
+    my $itr = $teng->search('test', {}, +{ order_by => 'id desc' });
+    my $results;
+    while( my $row = $itr->next ) {
+        my $text = $row->msg;
+        my $sim = String::Trigram::compare($text, $compared);
+        if($sim >= $th){
+            #自分自身は除く
+            if($row->id != $id){
+                push(@$results, $row);
+                print Dumper ($sim . " , " . $row->id);
+            }
+        }
+    }
+
+    $results;
 }
 
 filter 'set_title' => sub {
@@ -105,9 +150,18 @@ post '/' => sub {
     ]);
 
     my $teng = $self->teng();
-
     # 形態素解析(NGワードのチェック)
     my $is_ng = $self->is_ng($result->valid('msg'));
+    my $similers = $self->get_relations($teng, $result->valid('msg'), 0.1, 0);
+    my $sim;
+
+    #my $sub_msgs = "";
+    #foreach my $sim (@$similers) {
+    #    $sub_msgs = $sub_msg . ($sim->id . '「' . $sim->msg . "」<br/>");
+    #}
+
+    #print Dumper "=====";
+    #print Dumper $sub_msg;
 
     # error check
     if ( $is_ng ){
@@ -121,7 +175,7 @@ post '/' => sub {
             'msg' => $result->valid('msg')
         });
         my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
-        $c->render('index.tx', { status => "alert-success", message => "ToDoを保存しました", results => $iter });
+        $c->render('index.tx', { status => "alert-success", message => "ToDo : 「" . $result->valid('msg') ."」を作成しました", results => $iter, similers => $similers, sim => $sim});
     }
 };
 
@@ -167,8 +221,9 @@ post '/put'=> sub {
     ]);
 
     my $teng = $self->teng();
-
     my $is_ng = $self->is_ng($result->valid('msg'));
+    my $similers;
+    my $sim;
 
     # error check
     if ( $is_ng ){
@@ -182,7 +237,10 @@ post '/put'=> sub {
         my $row = $teng->single($table_name, {'id' => $result->valid('id')});
         my $count = $teng->update($table_name, {'msg' => $result->valid('msg') }, { 'id' => $row->id });
         my $iter = $teng->search($table_name, {}, +{ order_by => 'id desc'});
-        $c->render('index.tx', { status => "alert-success", message => "ToDo内容を変更しました" , results => $iter, row => $row } );
+
+        $similers = $self->get_relations($teng, $result->valid('msg'), 0.1, $row->id);
+
+        $c->render('index.tx', { status => "alert-success", message => "ToDo : 「" . $row->msg . "」を「" . $result->valid('msg') . "」に変更しました" , results => $iter, row => $row, similers => $similers, sim => $sim } );
     }
 };
 
@@ -203,12 +261,14 @@ post '/delete' => sub {
 
     # error check
     if ( $result->has_error ){
-        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
+        my $iter = $teng->search('test', {}, +{order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-error", message => "入力値が不正です", results => $iter } );
     } else{
+        my $row = $teng->single($table_name, {'id' => $result->valid('id')});
+        #print Dumper $row->msg;
         my $count = $teng->delete($table_name => {'id' => $result->valid('id')});
-        my $iter = $teng->search('test', {}, +{limit => 10, order_by => 'id desc'});
-        $c->render('index.tx', { status => "alert-success", message => "ToDoを削除しました" , results => $iter } );
+        my $iter = $teng->search('test', {}, +{order_by => 'id desc'});
+        $c->render('index.tx', { status => "alert-success", message => "ToDo : 「" . $row->msg . "」を削除しました" , results => $iter } );
     }
 };
 
