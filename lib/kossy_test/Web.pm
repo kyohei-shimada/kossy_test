@@ -16,8 +16,52 @@ my $dsn = "dbi:mysql:database=kossy_test;host=localhost";
 my $user = "kossy";
 my $password = "kossy_test";
 my $table_name = "test";
-my $ng_words = ['等', 'など', '的', 'とか', '多分', 'たぶん', 'それなり', '色々', 'いろいろ', 'さまざま', '様々'];
-my $ng_phrases = +["何か", "なんか", "なにか"];
+
+# DB用のtengオブジェクトの取得
+sub teng {
+    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
+    my $teng = Teng::Schema::Loader->load(
+      'dbh'       => $dbh,
+      'namespace' => 'KossyTest::DB',
+    );
+
+    $teng;
+}
+
+# NGワードのチェック
+sub is_ng {
+    my $self = shift;
+    my $msg = shift;
+    print Dumper "======";
+    print Dumper $msg;
+
+    my $ng_words = ['等', 'など', '的', 'とか', '多分', 'たぶん', 'それなり', '色々', 'いろいろ', 'さまざま', '様々'];
+    my $ng_phrases = +["何か", "なんか", "なにか"];
+
+    my $is_ng = 0;
+    my $m = Text::MeCab->new();
+    my $n = $m->parse($msg);
+    while ($n->surface) {
+        my $word = decode('UTF-8', $n->surface);
+        $n = $n->next;
+        foreach my $ng_word (@$ng_words) {
+            if ($ng_word =~ /^$word$/){
+                $is_ng = 1;
+                last;
+            }
+        }
+    }
+
+    # (NG文節のチェック)
+    foreach my $ng_phrase (@$ng_phrases) {
+        if ($msg =~ /$ng_phrase/){
+           $is_ng = 1;
+           last;
+        }
+    }
+
+    $is_ng;
+}
 
 filter 'set_title' => sub {
     my $app = shift;
@@ -32,18 +76,10 @@ get '/' => [qw/set_title/] => sub {
     my ( $self, $c )  = @_;
     my $query = $c->req->param('q');
 
-    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    my $teng = Teng::Schema::Loader->load(
-      'dbh'       => $dbh,
-      'namespace' => 'KossyTest::DB',
-    );
+    my $teng = $self->teng();
 
     if ($query){
         my $iter = $teng->search('test', [ 'msg', {'like' => ('%' . $query .'%') }  ], +{ order_by => 'id desc' });
-        #print Dumper($iter);
-        #my $count = $teng->do($like);
-        #my $count = $teng->count('test', '*', {like => ('%' . $query .'%')});
-        #print Dumper($count);
         $c->render('index.tx',
             { status => 'alert-info',
             message => "何かToDoを入力してください" ,
@@ -68,38 +104,10 @@ post '/' => sub {
         },
     ]);
 
-    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    my $teng = Teng::Schema::Loader->load(
-        'dbh'       => $dbh,
-        'namespace' => 'KossyTest::DB',
-    );
+    my $teng = $self->teng();
 
     # 形態素解析(NGワードのチェック)
-    my $is_ng = 0;
-    my $m = Text::MeCab->new();
-    my $n = $m->parse($result->valid('msg'));
-    while ($n->surface) {
-        my $word = decode('UTF-8', $n->surface);
-        $n = $n->next;
-        foreach my $ng_word (@$ng_words) {
-            print Dumper $ng_word;
-            if ($ng_word =~ /^$word$/){
-                $is_ng = 1;
-                last;
-            }
-        }
-    }
-
-    # (NG文節のチェック)
-    print Dumper "===============";
-    print Dumper $result->valid('msg');
-    foreach my $ng_phrase (@$ng_phrases) {
-        print Dumper $ng_phrase;
-        if ($result->valid('msg') =~ /$ng_phrase/){
-           $is_ng = 1;
-           last;
-        }
-    }
+    my $is_ng = $self->is_ng($result->valid('msg'));
 
     # error check
     if ( $is_ng ){
@@ -115,11 +123,6 @@ post '/' => sub {
         my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
         $c->render('index.tx', { status => "alert-success", message => "ToDoを保存しました", results => $iter });
     }
-    #my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    #my $teng = Teng::Schema::Loader->load(
-    #    'dbh' => $dbh,
-    #    'namespace' => 'MyApp::DB',
-    #);
 };
 
 # edit
@@ -134,11 +137,7 @@ get '/edit'=> sub {
         },
     ]);
 
-    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    my $teng = Teng::Schema::Loader->load(
-        'dbh'       => $dbh,
-        'namespace' => 'KossyTest::DB',
-    );
+    my $teng = $self->teng();
 
     # error check
     if ( $result->has_error ){
@@ -167,14 +166,15 @@ post '/put'=> sub {
         },
     ]);
 
-    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    my $teng = Teng::Schema::Loader->load(
-        'dbh'       => $dbh,
-        'namespace' => 'KossyTest::DB',
-    );
+    my $teng = $self->teng();
+
+    my $is_ng = $self->is_ng($result->valid('msg'));
 
     # error check
-    if ( $result->has_error ){
+    if ( $is_ng ){
+        my $iter = $teng->search('test', {}, +{ order_by => 'id desc'});
+        $c->render('edit.tx', { status => "alert-error", message => "ToDoに曖昧な表現が含まれています．より具体的にToDoを記述してください", results => $iter } );
+    } elsif ( $result->has_error ){
         my $row = $teng->single($table_name, {'id' => $result->valid('id')});
         my $iter = $teng->search($table_name, {}, +{ order_by => 'id desc'});
         $c->render('edit.tx', { status => "alert-error", message => "入力値が不正です", row => $row } );
@@ -199,11 +199,7 @@ post '/delete' => sub {
         },
     ]);
 
-    my $dbh = DBIx::Sunny->connect($dsn, $user, $password);
-    my $teng = Teng::Schema::Loader->load(
-        'dbh'       => $dbh,
-        'namespace' => 'KossyTest::DB',
-    );
+    my $teng = $self->teng();
 
     # error check
     if ( $result->has_error ){
@@ -215,21 +211,6 @@ post '/delete' => sub {
         $c->render('index.tx', { status => "alert-success", message => "ToDoを削除しました" , results => $iter } );
     }
 };
-
-
-
-#get '/json' => sub {
-#    my ( $self, $c )  = @_;
-#    my $result = $c->req->validator([
-#        'q' => {
-#            default => 'Hello',
-#            rule => [
-#                [['CHOICE',qw/Hello Bye/],'Hello or Bye']
-#            ],
-#        }
-#    ]);
-#    $c->render_json({ greeting => $result->valid->get('q') });
-#};
 
 1;
 

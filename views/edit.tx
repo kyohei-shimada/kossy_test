@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+
+: cascade base
+: around content -> {
+	<: if($status == 'alert-error'){ :>
+	  <div class="alert alert-error"><: $message :></div>
+	<: } elsif($status == 'alert-success'){ :>
+	  <div class="alert alert-success"><: $message :></div>
+	<: } else { :>
+	  <div class="alert alert-info">ToDoを編集してください</div>
+	<: }; :>
+
+	<h2>編集</h2>
+
+	<form action="<: $c.req.uri_for('/put') :>" method="post" >
+	  <input type="text" size="10" name="msg" value="<: $row.msg :>"/>
+	  <input type="hidden" name="id" value="<: $row.id :>"/>
+	  <input type="submit" value="送信する">
+	</form>
+: }
+</html>

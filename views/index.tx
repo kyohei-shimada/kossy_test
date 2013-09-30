@@ -28,10 +28,12 @@
 
 
 	<h2>ToDo一覧</h2>
+	<!--
 	<form action="<: $c.req.uri_for('/') :>" method="get" >
 		<label>検索 : <input type="text" size="100" name="q" value="<: $query :>" placeholder="キーワード" />
 		<input type="submit" value="送信する"></label>
 	</form>
+	-->
 	<: if($query){ :>
 		<div class="alert alert-success">
 			<div class="left">「<: $query :>」の検索結果</div>
@@ -40,7 +42,7 @@
 			</div>
 		</div>
 	<: } :>
-	<table class="table table-hover">
+	<table class="table table-hover display">
 		<thead>
 			<tr>
 				<th>No.</th>
@@ -48,19 +50,20 @@
 				<th></th>
 			</tr>
 		</thead>
-		<: while( my $row = $results.next ) { :>
-		  <tr>
-		    <td><: $row.id :></td>
-		    <td><: $row.msg :></td>
-	    	<td class="td-right">
-	    		<form action="<: $c.req.uri_for('/delete') :>" class="action-form" method="post" >
-		    		<a href="<: $c.req.uri_for('/edit') :>?id=<: $row.id :>" class="btn btn-info">編集</a>
-			    	<button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</button>
-		    	</form>
-		    </td>
-		  </tr>
-		<: } :>
+		<tbody>
+			<: while( my $row = $results.next ) { :>
+			  <tr>
+			    <td><: $row.id :></td>
+			    <td><: $row.msg :></td>
+		    	<td class="td-right">
+		    		<form action="<: $c.req.uri_for('/delete') :>" class="action-form" method="post" >
+			    		<a href="<: $c.req.uri_for('/edit') :>?id=<: $row.id :>" class="btn btn-info">編集</a>
+				    	<button type="submit" class="btn btn-danger" name="id" value="<: $row.id :>">削除</button>
+			    	</form>
+			    </td>
+			  </tr>
+			<: } :>
+		</tbody>
 	</table>
-
 : }
 </html>
